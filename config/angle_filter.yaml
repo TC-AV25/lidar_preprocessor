@@ -1,0 +1,5 @@
+angle_filter_node:
+  ros__parameters:
+    input_topic: "/livox/lidar_xxx"
+    output_topic: "/filtered_cloud"
+    excluded_angles: [-30.0, 30.0, 150.0, 210.0]

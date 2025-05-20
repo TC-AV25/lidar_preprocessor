@@ -1,0 +1,12 @@
+multi_lidar_filter_node:
+  ros__parameters:
+    input_lidar_topics:
+      - "/livox/lidar_xxx"
+      - "/livox/lidar_xxx"
+    input_imu_topic: "livox/imu_xxx"
+    output_lidar_topics:
+      - "/sensing/lidar/concatenated/pointcloud"
+      - "/sensing/lidar/top/outlier_filtered/pointcloud"
+    output_imu_topic: "/sensing/imu/tamagawa/imu_raw"
+    excluded_angles: [-30.0, 30.0, 150.0, 210.0]
+    exclude_center_radius: 2.0
