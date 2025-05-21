@@ -35,22 +35,36 @@ MultiLidarFilter::MultiLidarFilter(const rclcpp::NodeOptions & options)
   for (size_t i = 0; i + 1 < ranges_flat.size(); i += 2) {
     excluded_ranges_.emplace_back(ranges_flat[i], ranges_flat[i + 1]);
   }
+  // Define QoS profiles
+  rclcpp::QoS livox_qos(rclcpp::KeepLast(256));
+  livox_qos.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+  livox_qos.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+  
+  auto sensor_qos = rclcpp::SensorDataQoS();
+  
+  rclcpp::QoS livox_imu_qos(rclcpp::KeepLast(256));
+  livox_imu_qos.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+  livox_imu_qos.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
 
+  rclcpp::QoS imu_raw_qos(rclcpp::KeepLast(10));
+  imu_raw_qos.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+  imu_raw_qos.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
+  
   for (const auto & topic : input_lidar_topics) {
     auto callback = [this, topic](const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
       this->pointcloudCallback(msg, topic);
     };
     subscribers_[topic] = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      topic, rclcpp::SensorDataQoS(), callback);
+      topic, livox_qos, callback);
   }
 
   for (const auto & out_topic : output_lidar_topics) {
-    pub_list_.push_back(this->create_publisher<sensor_msgs::msg::PointCloud2>(out_topic, 10));
+    pub_list_.push_back(this->create_publisher<sensor_msgs::msg::PointCloud2>(out_topic, sensor_qos));
   }
 
-  imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>(output_imu_topic, 10);
+  imu_pub_ = this->create_publisher<sensor_msgs::msg::Imu>(output_imu_topic, imu_raw_qos);
   imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-    input_imu_topic, 10, std::bind(&MultiLidarFilter::imuCallback, this, std::placeholders::_1));
+    input_imu_topic, livox_imu_qos, std::bind(&MultiLidarFilter::imuCallback, this, std::placeholders::_1));
 
   timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&MultiLidarFilter::mergeAndPublish, this));
 
@@ -148,4 +162,3 @@ void MultiLidarFilter::mergeAndPublish() {
 }
 
 }  // namespace lidar_preprocessor
-
